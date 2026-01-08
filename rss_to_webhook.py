@@ -94,6 +94,12 @@ def post_to_discord_webhook(
     title: str,
     link: str,
 ) -> None:
+    # Optional: add ?wait=true so Discord returns JSON (sometimes helps debugging)
+    if "?" in webhook_url:
+        url = webhook_url + "&wait=true"
+    else:
+        url = webhook_url + "?wait=true"
+
     payload = {
         "username": username,
         "embeds": [
@@ -109,14 +115,19 @@ def post_to_discord_webhook(
 
     data = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
-        webhook_url,
+        url,
         data=data,
-        headers={"Content-Type": "application/json"},
         method="POST",
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            # This is the key part: make it look like a normal client, not a “botty” request
+            "User-Agent": "Mozilla/5.0 (compatible; KareiviuNaujienos/1.0; +https://github.com/)",
+        },
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=20) as resp:
+        with urllib.request.urlopen(req, timeout=30) as resp:
             resp.read()
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", errors="ignore")
