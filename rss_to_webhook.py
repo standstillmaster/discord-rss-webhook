@@ -114,8 +114,13 @@ def post_to_discord_webhook(
         headers={"Content-Type": "application/json"},
         method="POST",
     )
-    with urllib.request.urlopen(req, timeout=20) as resp:
-        resp.read()
+
+    try:
+        with urllib.request.urlopen(req, timeout=20) as resp:
+            resp.read()
+    except urllib.error.HTTPError as e:
+        body = e.read().decode("utf-8", errors="ignore")
+        raise SystemExit(f"Discord webhook error: {e.code} {e.reason}\n{body}")
 
 
 def main() -> None:
