@@ -27,6 +27,7 @@ jobs:
           WEBHOOK_NAME: "Būrio Ryšininkas"
           AVATAR_URL: ""       # jei turi tiesioginį avataro URL, įklijuok čia
           MAX_POSTS: "3"
+          POST_ON_FIRST_RUN: "1"
         run: python rss_to_webhook.py
 
       - name: Commit state.json (remember last post)
