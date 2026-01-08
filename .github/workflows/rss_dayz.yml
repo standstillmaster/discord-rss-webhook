@@ -1,5 +1,8 @@
 name: RSS -> Discord Webhook (DayZ)
 
+permissions:
+  contents: write
+
 on:
   schedule:
     - cron: "*/20 * * * *"   # kas 20 min
