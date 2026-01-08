@@ -1,0 +1,37 @@
+name: RSS -> Discord Webhook (DayZ)
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"   # kas 20 min
+  workflow_dispatch:          # kad galėtum paleisti ranka
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          RSS_URL: "https://store.steampowered.com/feeds/news/app/221100/?cc=us&l=english"
+          WEBHOOK_NAME: "Būrio Ryšininkas"
+          AVATAR_URL: ""       # jei turi tiesioginį avataro URL, įklijuok čia
+          MAX_POSTS: "3"
+        run: python rss_to_webhook.py
+
+      - name: Commit state.json (remember last post)
+        run: |
+          if [ -f state.json ]; then
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add state.json
+            git commit -m "Update RSS state" || echo "No changes"
+            git push || echo "No push"
+          fi
