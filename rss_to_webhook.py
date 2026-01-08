@@ -120,10 +120,26 @@ def main():
 
     newest_gid = (items[0].get("guid") or items[0].get("link") or items[0].get("title"))
     if not last_seen:
-        state[feed_key] = newest_gid
-        save_state(state)
+    # If you want a one-time test post on first run, set POST_ON_FIRST_RUN=1
+    post_on_first = os.environ.get("POST_ON_FIRST_RUN", "0") == "1"
+    state[feed_key] = newest_gid
+    save_state(state)
+
+    if not post_on_first:
         print("First run: saved newest item, not posting old entries.")
         return
+
+    # Post newest item once (test mode)
+    post_to_webhook(
+        webhook_url=webhook_url,
+        username=webhook_name,
+        avatar_url=avatar_url,
+        title=items[0]["title"],
+        link=items[0]["link"],
+    )
+    print("First run test: posted newest item once.")
+    return
+
 
     MAX_POSTS = int(os.environ.get("MAX_POSTS", "3"))
     to_post = unseen[-MAX_POSTS:] if len(unseen) > MAX_POSTS else unseen
