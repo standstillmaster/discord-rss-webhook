@@ -23,11 +23,11 @@ jobs:
       - name: Run
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          RSS_URL: "https://techcrunch.com/feed"
+          RSS_URL: "https://store.steampowered.com/feeds/news/app/221100/?cc=us&l=english"
           WEBHOOK_NAME: "Būrio Ryšininkas"
           AVATAR_URL: ""
           MAX_POSTS: "3"
-          POST_ON_FIRST_RUN: "1"
+          POST_ON_FIRST_RUN: "0"
           AUTHOR_NAME: "Būrio Ryšininkas"
           FOOTER_TEXT: "Kareivių Nuotykiai • DayZ naujienos"
           EMBED_COLOR: "15158332" # raudona (discord red)
