@@ -31,7 +31,7 @@ jobs:
           AUTHOR_NAME: "Būrio Ryšininkas"
           FOOTER_TEXT: "Kareivių Nuotykiai • DayZ naujienos"
           EMBED_COLOR: "15158332" # raudona (discord red)
-          THUMBNAIL_URL: "https://cdn.discordapp.com/attachments/1458072008146288721/1458974934717038836/0911ce6d90b2a0680494fc764ac38401.png?ex=696197ca&is=6960464a&hm=c161279d9d7e2375ee96ac6f7f55bb3fb74ad430938ad9c5d2d31847550bb734&"       # jei turi DayZ logo URL, įklijuok čia
+          THUMBNAIL_URL: "https://cdn.discordapp.com/attachments/1458072008146288721/1458983743871123652/pranesimu_naujienos.png?ex=69619fff&is=69604e7f&hm=43ac5d5db6ad7aa3c2813e8aae78dd5dd93e41d9fe719e05d8a2b46e342bcd69&"       # jei turi DayZ logo URL, įklijuok čia
           AUTHOR_ICON_URL: ""     # jei nori kitokios ikonos nei webhook avataras
         run: python rss_to_webhook.py
 
