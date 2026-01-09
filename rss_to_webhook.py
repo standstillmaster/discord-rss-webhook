@@ -94,21 +94,38 @@ def post_to_discord_webhook(
     title: str,
     link: str,
 ) -> None:
-    # Optional: add ?wait=true so Discord returns JSON (sometimes helps debugging)
+    # Discord sometimes likes a more "normal" request (helps avoid 1010)
     if "?" in webhook_url:
         url = webhook_url + "&wait=true"
     else:
         url = webhook_url + "?wait=true"
 
+    # Optional styling from env (safe defaults)
+    embed_color = int(os.environ.get("EMBED_COLOR", "16711680"))  # default red
+    author_name = os.environ.get("AUTHOR_NAME", username)
+    author_icon = os.environ.get("AUTHOR_ICON_URL", avatar_url)  # can be different from webhook avatar
+    thumbnail_url = os.environ.get("THUMBNAIL_URL", "")          # e.g. DayZ logo direct image URL
+    footer_text = os.environ.get("FOOTER_TEXT", "Kareivių Nuotykiai • Automatinės naujienos")
+
+    embed = {
+        "title": title[:256],
+        "url": link,
+        "color": embed_color,
+        "description": "📰 Nauja žinutė iš fronto. Spausk pavadinimą ir skaityk detales.",
+        "footer": {"text": footer_text},
+        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "author": {"name": author_name},
+    }
+
+    if author_icon:
+        embed["author"]["icon_url"] = author_icon
+
+    if thumbnail_url:
+        embed["thumbnail"] = {"url": thumbnail_url}
+
     payload = {
         "username": username,
-        "embeds": [
-            {
-                "title": title[:256],
-                "url": link,
-                "description": link,
-            }
-        ],
+        "embeds": [embed],
     }
     if avatar_url:
         payload["avatar_url"] = avatar_url
@@ -121,7 +138,6 @@ def post_to_discord_webhook(
         headers={
             "Content-Type": "application/json",
             "Accept": "application/json",
-            # This is the key part: make it look like a normal client, not a “botty” request
             "User-Agent": "Mozilla/5.0 (compatible; KareiviuNaujienos/1.0; +https://github.com/)",
         },
     )
@@ -132,6 +148,7 @@ def post_to_discord_webhook(
     except urllib.error.HTTPError as e:
         body = e.read().decode("utf-8", errors="ignore")
         raise SystemExit(f"Discord webhook error: {e.code} {e.reason}\n{body}")
+
 
 
 def main() -> None:
