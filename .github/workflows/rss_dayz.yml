@@ -23,7 +23,7 @@ jobs:
       - name: Run
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
-          RSS_URL: "https://store.steampowered.com/feeds/news/app/221100/?cc=us&l=english"
+          RSS_URL: "https://techcrunch.com/feed"
           WEBHOOK_NAME: "Būrio Ryšininkas"
           AVATAR_URL: ""
           MAX_POSTS: "3"
