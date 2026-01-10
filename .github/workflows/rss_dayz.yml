@@ -5,8 +5,17 @@ permissions:
 
 on:
   schedule:
-    - cron: "*/20 * * * *"   # kas 20 min
+    - cron: "*/20 * * * *"
   workflow_dispatch:
+    inputs:
+      force_test:
+        description: "Post newest item once (does not change state.json)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
 
 jobs:
   post:
@@ -28,6 +37,7 @@ jobs:
           AVATAR_URL: ""
           MAX_POSTS: "3"
           POST_ON_FIRST_RUN: "0"
+          FORCE_TEST: ${{ github.event.inputs.force_test == 'true' && '1' || '0' }}
           AUTHOR_NAME: "Būrio Ryšininkas"
           FOOTER_TEXT: "Kareivių Nuotykiai • DayZ naujienos"
           EMBED_COLOR: "15158332" # raudona (discord red)
