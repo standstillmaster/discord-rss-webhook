@@ -165,6 +165,8 @@ def main() -> None:
 
     max_posts = int(os.environ.get("MAX_POSTS", "3"))
     post_on_first_run = os.environ.get("POST_ON_FIRST_RUN", "0") == "1"
+    force_test = os.environ.get("FORCE_TEST", "0") == "1"
+
 
     state = load_state()
     feed_key = stable_id(rss_url)
@@ -179,6 +181,17 @@ def main() -> None:
 
     newest = items[0]
     newest_guid = newest["guid"]
+    # Force-test mode: always post the newest item once, without touching state.
+if force_test:
+    post_to_discord_webhook(
+        webhook_url=webhook_url,
+        username=webhook_name,
+        avatar_url=avatar_url,
+        title=newest["title"],
+        link=newest["link"],
+    )
+    print("Force test: posted newest item once (state not changed).")
+    return
 
     # First ever run for this feed: remember newest and optionally post once (test mode)
     if not last_seen_guid:
