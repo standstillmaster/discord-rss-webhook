@@ -5,6 +5,7 @@ import hashlib
 import urllib.request
 import urllib.error
 import xml.etree.ElementTree as ET
+import re
 
 STATE_FILE = "state.json"
 
@@ -87,6 +88,45 @@ def stable_id(text: str) -> str:
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
 
+def extract_og_image_url(page_url: str) -> str:
+    """
+    Returns og:image URL if found, else "".
+    Works for many news/blog pages. Some sites may block scraping.
+    """
+    try:
+        req = urllib.request.Request(
+            page_url,
+            headers={
+                "User-Agent": "Mozilla/5.0 (compatible; KareiviuNaujienos/1.0; +https://github.com/)",
+                "Accept": "text/html,application/xhtml+xml",
+            },
+        )
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            html = resp.read().decode("utf-8", errors="ignore")
+    except Exception:
+        return ""
+
+    # Try: <meta property="og:image" content="...">
+    m = re.search(
+        r'<meta[^>]+property=["\']og:image["\'][^>]+content=["\']([^"\']+)["\']',
+        html,
+        flags=re.IGNORECASE,
+    )
+    if m:
+        return m.group(1).strip()
+
+    # Sometimes order is reversed: content="..." property="og:image"
+    m = re.search(
+        r'<meta[^>]+content=["\']([^"\']+)["\'][^>]+property=["\']og:image["\']',
+        html,
+        flags=re.IGNORECASE,
+    )
+    if m:
+        return m.group(1).strip()
+
+    return ""
+
+
 def post_to_discord_webhook(
     webhook_url: str,
     username: str,
@@ -115,6 +155,7 @@ def post_to_discord_webhook(
         "footer": {"text": footer_text},
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "author": {"name": author_name},
+        
     }
 
     if author_icon:
@@ -122,6 +163,10 @@ def post_to_discord_webhook(
 
     if thumbnail_url:
         embed["thumbnail"] = {"url": thumbnail_url}
+
+        og_image = extract_og_image_url(link)
+    if og_image:
+        embed["image"] = {"url": og_image}
 
     payload = {
         "username": username,
