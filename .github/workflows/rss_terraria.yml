@@ -1,0 +1,58 @@
+name: RSS -> Discord Webhook (Terraria)
+
+permissions:
+  contents: write
+
+on:
+  schedule:
+    - cron: "*/20 * * * *"   # kas 20 min
+  workflow_dispatch:
+    inputs:
+      force_test:
+        description: "Post newest item once (does not change state.json)"
+        required: false
+        default: "false"
+        type: choice
+        options:
+          - "false"
+          - "true"
+
+jobs:
+  post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          RSS_URL: "https://store.steampowered.com/feeds/news/app/105600/?cc=us&l=english"
+          WEBHOOK_NAME: "Ekspedicijos Gidas"
+          AVATAR_URL: ""
+          MAX_POSTS: "3"
+          POST_ON_FIRST_RUN: "0"
+          FORCE_TEST: ${{ github.event.inputs.force_test == 'true' && '1' || '0' }}
+
+          # Embed stilius (jei tavo kode jie naudojami)
+          AUTHOR_NAME: "Ekspedicijos Gidas"
+          FOOTER_TEXT: "Kareivių Nuotykiai • Terraria naujienos"
+          EMBED_COLOR: "3066993"
+          THUMBNAIL_URL: ""
+          AUTHOR_ICON_URL: ""
+        run: python rss_to_webhook.py
+
+      - name: Commit state.json
+        run: |
+          if [ -f state.json ]; then
+            git config user.name "github-actions"
+            git config user.email "github-actions@github.com"
+            git add state.json
+            git commit -m "Update RSS state" || echo "No changes"
+            git push || echo "No push"
+          fi
