@@ -175,10 +175,25 @@ def main() -> None:
     last_seen = state.get(feed_key, "")
 
     xml = fetch_url(rss_url)
-    items = parse_feed(xml)
-    if not items:
-        print("No items.")
-        return
+items = parse_feed(xml)
+
+# Force test should work even if feed is empty or weird
+if force_test:
+    if items:
+        newest = items[0]
+        post_to_discord_webhook(
+            webhook_url, webhook_name, avatar_url,
+            newest["title"], newest["link"]
+        )
+        print("Force test post sent.")
+    else:
+        print("Force test: feed empty, nothing to post.")
+    return
+
+if not items:
+    print("No items.")
+    return
+
 
     newest = items[0]
 
