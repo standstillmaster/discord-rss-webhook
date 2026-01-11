@@ -10,19 +10,19 @@ import re
 STATE_FILE = "state.json"
 
 
-def load_state() -> dict:
+def load_state():
     if os.path.exists(STATE_FILE):
         with open(STATE_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     return {}
 
 
-def save_state(state: dict) -> None:
+def save_state(state):
     with open(STATE_FILE, "w", encoding="utf-8") as f:
         json.dump(state, f, ensure_ascii=False, indent=2)
 
 
-def fetch_url(url: str, timeout: int = 20) -> bytes:
+def fetch_url(url, timeout=20):
     req = urllib.request.Request(
         url,
         headers={"User-Agent": "Mozilla/5.0 (compatible; KareiviuRSS/1.0)"},
@@ -31,10 +31,10 @@ def fetch_url(url: str, timeout: int = 20) -> bytes:
         return resp.read()
 
 
-def parse_feed(xml_bytes: bytes) -> list[dict]:
+def parse_feed(xml_bytes):
     root = ET.fromstring(xml_bytes)
 
-    # Atom
+    # Atom feeds
     if root.tag.endswith("feed"):
         ns = {"a": root.tag.split("}")[0].strip("{")} if "}" in root.tag else {}
         items = []
@@ -48,7 +48,7 @@ def parse_feed(xml_bytes: bytes) -> list[dict]:
                 items.append({"title": title, "link": link, "guid": guid or link})
         return items
 
-    # RSS
+    # RSS feeds
     channel = root.find("channel")
     if channel is None:
         for c in root.iter():
@@ -69,7 +69,7 @@ def parse_feed(xml_bytes: bytes) -> list[dict]:
     return items
 
 
-def extract_og_image_url(page_url: str) -> str:
+def extract_og_image_url(page_url):
     try:
         req = urllib.request.Request(
             page_url,
@@ -102,13 +102,7 @@ def extract_og_image_url(page_url: str) -> str:
     return ""
 
 
-def post_to_discord_webhook(
-    webhook_url: str,
-    username: str,
-    avatar_url: str,
-    title: str,
-    link: str,
-) -> None:
+def post_to_discord_webhook(webhook_url, username, avatar_url, title, link):
     if "?" in webhook_url:
         url = webhook_url + "&wait=true"
     else:
@@ -121,12 +115,7 @@ def post_to_discord_webhook(
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
-    og_image = ""
-    try:
-        og_image = extract_og_image_url(link)
-    except Exception:
-        og_image = ""
-
+    og_image = extract_og_image_url(link)
     if og_image:
         embed["image"] = {"url": og_image}
 
@@ -153,11 +142,11 @@ def post_to_discord_webhook(
         resp.read()
 
 
-def stable_id(text: str) -> str:
+def stable_id(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()[:16]
 
 
-def main() -> None:
+def main():
     webhook_url = os.environ.get("DISCORD_WEBHOOK_URL", "").strip()
     rss_url = os.environ.get("RSS_URL", "").strip()
     webhook_name = os.environ.get("WEBHOOK_NAME", "Būrio Ryšininkas").strip()
@@ -170,32 +159,63 @@ def main() -> None:
         print("Missing env vars.")
         return
 
+    xml = fetch_url(rss_url)
+    items = parse_feed(xml)
+
+    # FORCE TEST — veikia visada
+    if force_test:
+        if items:
+            newest = items[0]
+            post_to_discord_webhook(
+                webhook_url, webhook_name, avatar_url,
+                newest["title"], newest["link"]
+            )
+            print("Force test post sent.")
+        else:
+            print("Force test: feed empty.")
+        return
+
+    if not items:
+        print("No items.")
+        return
+
     state = load_state()
     feed_key = stable_id(rss_url)
     last_seen = state.get(feed_key, "")
 
-    xml = fetch_url(rss_url)
-items = parse_feed(xml)
-
-# Force test should work even if feed is empty or weird
-if force_test:
-    if items:
-        newest = items[0]
-        post_to_discord_webhook(
-            webhook_url, webhook_name, avatar_url,
-            newest["title"], newest["link"]
-        )
-        print("Force test post sent.")
-    else:
-        print("Force test: feed empty, nothing to post.")
-    return
-
-if not items:
-    print("No items.")
-    return
-
-
     newest = items[0]
 
-    if force_test:
-        post_to_d
+    if not last_seen:
+        state[feed_key] = newest["guid"]
+        save_state(state)
+        print("First run, state saved.")
+        return
+
+    to_post = []
+    for it in reversed(items):
+        if it["guid"] == last_seen:
+            to_post = []
+            continue
+        to_post.append(it)
+
+    if not to_post:
+        print("No new items.")
+        return
+
+    if len(to_post) > max_posts:
+        to_post = to_post[-max_posts:]
+
+    for it in to_post:
+        post_to_discord_webhook(
+            webhook_url, webhook_name, avatar_url,
+            it["title"], it["link"]
+        )
+        time.sleep(1)
+
+    state[feed_key] = newest["guid"]
+    save_state(state)
+    print(f"Posted {len(to_post)} items.")
+
+
+if __name__ == "__main__":
+    main()
