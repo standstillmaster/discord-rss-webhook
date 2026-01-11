@@ -108,6 +108,13 @@ def post_to_discord_webhook(webhook_url, username, avatar_url, title, link):
     else:
         url = webhook_url + "?wait=true"
 
+    # Style from env (optional)
+    footer_text = os.environ.get("FOOTER_TEXT", "").strip()
+    author_name = os.environ.get("AUTHOR_NAME", "").strip()
+    author_icon_url = os.environ.get("AUTHOR_ICON_URL", "").strip()
+    thumbnail_url = os.environ.get("THUMBNAIL_URL", "").strip()
+    embed_color_raw = os.environ.get("EMBED_COLOR", "").strip()
+
     embed = {
         "title": title[:256],
         "url": link,
@@ -115,6 +122,28 @@ def post_to_discord_webhook(webhook_url, username, avatar_url, title, link):
         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
     }
 
+    # Color
+    if embed_color_raw:
+        try:
+            embed["color"] = int(embed_color_raw)
+        except Exception:
+            pass
+
+    # Author
+    if author_name:
+        embed["author"] = {"name": author_name}
+        if author_icon_url:
+            embed["author"]["icon_url"] = author_icon_url
+
+    # Footer
+    if footer_text:
+        embed["footer"] = {"text": footer_text}
+
+    # Thumbnail (small image)
+    if thumbnail_url:
+        embed["thumbnail"] = {"url": thumbnail_url}
+
+    # Main image from page (og:image) – optional
     og_image = extract_og_image_url(link)
     if og_image:
         embed["image"] = {"url": og_image}
@@ -140,6 +169,7 @@ def post_to_discord_webhook(webhook_url, username, avatar_url, title, link):
 
     with urllib.request.urlopen(req, timeout=30) as resp:
         resp.read()
+
 
 
 def stable_id(text):
