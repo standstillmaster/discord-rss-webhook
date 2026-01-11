@@ -164,7 +164,7 @@ def post_to_discord_webhook(
     if thumbnail_url:
         embed["thumbnail"] = {"url": thumbnail_url}
 
-        og_image = extract_og_image_url(link)
+            og_image = extract_og_image_url(link) if 'extract_og_image_url' in globals() else ""
     if og_image:
         embed["image"] = {"url": og_image}
 
